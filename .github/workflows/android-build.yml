@@ -31,13 +31,14 @@ jobs:
       - name: Install Expo & EAS CLI
         run: npm install -g expo-cli eas-cli
 
-      # 5️⃣ Authenticate with Expo using your EXPO_TOKEN
-      - name: Authenticate with Expo
+      # 5️⃣ Authenticate with Expo using EXPO_TOKEN
+      - name: Verify Expo authentication
         run: expo whoami
         env:
           EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
 
       # 6️⃣ Build Android APK or AAB based on selected profile
       - name: Build Android
-        run: |
-          eas build --platform android --profile ${{ github.event.inputs.build_profile }} --non-interactive
+        run: eas build --platform android --profile ${{ github.event.inputs.build_profile }} --non-interactive
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
