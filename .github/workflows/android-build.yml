@@ -1,0 +1,44 @@
+name: Android Build (Expo)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build_profile:
+        description: "preview = APK, production = AAB"
+        required: true
+        default: "preview"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install Expo & EAS
+        run: npm install -g expo-cli eas-cli
+
+      - name: Authenticate with Expo
+        run: expo whoami
+        env:
+          EXPO_TOKEN: ${{ secrets.EXPO_TOKEN }}
+
+      - name: Build Android
+        run: |
+          eas build \
+            --platform android \
+            --profile ${{ github.event.inputs.build_profile }} \
+            --non-interactive
+
+      - name: Download built artifact
+        uses: actions/download-artifact@v3
+        if: always()
