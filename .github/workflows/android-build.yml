@@ -39,7 +39,5 @@ jobs:
 
       # 6️⃣ Build Android APK or AAB based on selected profile
       - name: Build Android
-        run: eas build \
-          --platform android \
-          --profile ${{ github.event.inputs.build_profile }} \
-          --non-interactive
+        run: |
+          eas build --platform android --profile ${{ github.event.inputs.build_profile }} --non-interactive
