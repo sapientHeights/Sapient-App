@@ -39,8 +39,3 @@ jobs:
             --profile ${{ github.event.inputs.build_profile }} \
             --non-interactive
 
-      - name: Download built artifact
-        uses: actions/artifact@v3
-        with:
-          name: android-build
-
