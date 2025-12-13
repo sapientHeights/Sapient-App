@@ -40,5 +40,7 @@ jobs:
             --non-interactive
 
       - name: Download built artifact
-        uses: actions/download-artifact@v3
-        if: always()
+        uses: actions/artifact@v3
+        with:
+          name: android-build
+
