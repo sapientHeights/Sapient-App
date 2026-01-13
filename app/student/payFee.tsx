@@ -3,7 +3,7 @@ import StdSidebarLayout from "@/components/student/StdSidebarLayout";
 import { Feather } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import * as SecureStore from "expo-secure-store";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
     ActivityIndicator,
     Linking,
@@ -18,6 +18,9 @@ import {
 } from "react-native";
 import QRCode from "react-native-qrcode-svg";
 import Toast from "react-native-toast-message";
+
+import * as Sharing from 'expo-sharing';
+import { captureRef } from 'react-native-view-shot';
 
 type StdData = {
     sId: string;
@@ -84,9 +87,11 @@ const PayFee = () => {
     const [submitPhase, setSubmitPhase] = useState(false); // Show txn input
     const [isPending, setIsPending] = useState(false);
 
+    const qrRef = useRef<any>(null);
+
     const paymentMethods = [
         { name: "QR", icon: "grid" },
-        { name: "UPI", icon: "smartphone" }
+ //       { name: "UPI", icon: "smartphone" }
     ];
 
     // ---------------- Fetch Data ----------------
@@ -182,17 +187,72 @@ const PayFee = () => {
     };
 
     // ----------------- UPI App Payment -----------------
-    const handleUPIPayment = () => {
+    // const handleUPIPayment = () => {
+    //     if (errorText || !enterAmount) return;
+
+    //     const upiURL = encodeURI(
+    //         `upi://pay?pa=sapientheightsintern.99982219@hdfcbank&pn=Sapient Heights School&tn=Fee Payment&am=${enterAmount}&cu=INR`
+    //     );
+
+    //     Linking.openURL(upiURL).catch(() => {
+    //         Toast.show({ type: "error", text1: "No UPI app found" });
+    //     });
+    // };
+
+    // const handleUPIPayment = async () => {
+    //     if (errorText || !enterAmount) return;
+
+    //     const upiURL =
+    //         `upi://pay?pa=sapientheightsintern.99982219@hdfcbank` +
+    //         `&pn=Sapient Heights School` +
+    //         `&tn=Fee Payment` +
+    //         `&am=${enterAmount}` +
+    //         `&cu=INR`;
+
+    //     try {
+    //         const supported = await Linking.canOpenURL(upiURL);
+
+    //         if (!supported) {
+    //             Toast.show({
+    //                 type: "error",
+    //                 text1: "UPI App not found",
+    //                 text2: "Please install a UPI app like GPay or PhonePe"
+    //             });
+    //             return;
+    //         }
+
+    //         await Linking.openURL(upiURL);
+    //     } catch (err) {
+    //         Toast.show({
+    //             type: "error",
+    //             text1: "Unable to open UPI app"
+    //         });
+    //     }
+    // };
+
+    const handleUPIPayment = async () => {
         if (errorText || !enterAmount) return;
 
         const upiURL = encodeURI(
-            `upi://pay?pa=sapientheightsintern.99982219@hdfcbank&pn=Sapient Heights School&tn=Fee Payment&am=${enterAmount}&cu=INR`
+            `upi://pay?pa=sapientheightsintern.99982219@hdfcbank` +
+            `&pn=Sapient Heights School` +
+            `&tn=Fee Payment` +
+            `&am=${Number(enterAmount).toFixed(2)}` +
+            `&cu=INR` +
+            `&mode=02`
         );
 
-        Linking.openURL(upiURL).catch(() => {
-            Toast.show({ type: "error", text1: "No UPI app found" });
-        });
+        try {
+            await Linking.openURL(upiURL);
+        } catch (err) {
+            Toast.show({
+                type: "error",
+                text1: "UPI App not found",
+                text2: "Please install or enable a UPI app like GPay or PhonePe"
+            });
+        }
     };
+
 
 
     // ----------------- Open Modal -----------------
@@ -246,6 +306,44 @@ const PayFee = () => {
             setModalVisible(true);
         }
         finally {
+            setLoading(false);
+        }
+    };
+
+    const downloadQR = async () => {
+        if (!qrRef.current) return;
+
+        setLoading(true);
+        try {
+            if (Platform.OS === 'web') {
+                qrRef.current.toDataURL((base64Data: string) => {
+                    const dataURL = `data:image/png;base64,${base64Data}`;
+
+                    fetch(dataURL)
+                        .then(res => res.blob())
+                        .then(blob => {
+                            const url = URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = 'upi_qr.png';
+                            link.click();
+                            URL.revokeObjectURL(url);
+                        });
+                });
+            } else {
+                const uri = await captureRef(qrRef.current, {
+                    format: 'png',
+                    quality: 1,
+                    result: 'tmpfile',
+                });
+
+                await Sharing.shareAsync(uri);
+            }
+        } catch (err) {
+            Toast.show({ type: "error", text1: "Some error occurred", text2: "Failed to download image" });
+            
+        }
+        finally{
             setLoading(false);
         }
     };
@@ -417,6 +515,7 @@ const PayFee = () => {
                                             `upi://pay?pa=sapientheightsintern.99982219@hdfcbank&pn=Sapient Heights School&tn=Fee Payment&am=${enterAmount}&cu=INR`
                                         )}
                                         size={180}
+                                        getRef={(c) => (qrRef.current = c)}
                                     />
                                 </View>
                             ) : null}
@@ -431,6 +530,12 @@ const PayFee = () => {
                                     <Text style={styles.modalBtnText}>Pay via UPI App</Text>
                                 </TouchableOpacity>
                             ) : null}
+
+                            {selectedMethod === "QR" && !errorText && enterAmount && (
+                                <TouchableOpacity onPress={downloadQR} style={[styles.modalBtn, { backgroundColor: "#4F46E5", marginTop: 20 }]} >
+                                    <Text style={styles.modalBtnText}>Download QR</Text>
+                                </TouchableOpacity>
+                            )}
 
                             {/* I have paid button */}
                             {!submitPhase && enterAmount && !errorText ? (

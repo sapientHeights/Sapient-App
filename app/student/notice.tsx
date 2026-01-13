@@ -1,3 +1,4 @@
+import Button from "@/components/Button";
 import StdSidebarLayout from "@/components/student/StdSidebarLayout";
 import UniversalDatePicker from "@/components/UniversalDatePicker";
 import { Feather } from "@expo/vector-icons";
@@ -6,10 +7,13 @@ import * as SecureStore from "expo-secure-store";
 import React, { useEffect, useState } from "react";
 import {
     ActivityIndicator,
+    Image,
+    Modal,
     Platform,
     ScrollView,
     StyleSheet,
     Text,
+    TouchableOpacity,
     View
 } from "react-native";
 import Toast from "react-native-toast-message";
@@ -21,6 +25,7 @@ type NoticeData = {
     title: string;
     subject: string;
     message: string;
+    image: string;
     createdBy: string;
 };
 
@@ -31,6 +36,9 @@ const Notice = () => {
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [loading, setLoading] = useState(true);
     const [notices, setNotices] = useState<NoticeData[]>([]);
+
+    const [modalVisible, setModalVisible] = useState(false);
+    const [modalImageUrl, setModalImageUrl] = useState<string | null>(null);
 
     const loadNotices = async () => {
         let userDataStr: string | null = null;
@@ -77,6 +85,32 @@ const Notice = () => {
         loadNotices();
     }, [selectedDate]);
 
+    const openModal = (url: string) => {
+        setModalImageUrl(url);
+        setModalVisible(true);
+    };
+
+    const renderNoticeImage = (pic: string | null, sessionId: string) => {
+        if (!pic) {
+            return (
+                <View style={styles.noticeIconWrapper}>
+                    <Feather name="file-text" size={28} color="#6B46C1" />
+                </View>
+            );
+        }
+
+        const imageUrl = `${BACKEND_URL}/uploads/notices/${sessionId}/${pic}`;
+
+        return (
+            <TouchableOpacity onPress={() => openModal(imageUrl)}>
+                <Image
+                    source={{ uri: imageUrl }}
+                    style={styles.noticeImageSmall}
+                />
+            </TouchableOpacity>
+        );
+    };
+
     if (loading) {
         return (
             <View style={styles.loaderContainer}>
@@ -115,6 +149,8 @@ const Notice = () => {
                             <View key={item.noticeId} style={styles.noticeCard}>
                                 <View style={styles.leftAccent} />
 
+                                {renderNoticeImage(item.image, item.sessionId)}
+
                                 <View style={{ flex: 1 }}>
                                     <Text style={styles.noticeTitle}>{item.title}</Text>
                                     <Text style={styles.noticeSubject}>{item.subject}</Text>
@@ -128,6 +164,23 @@ const Notice = () => {
                     )}
                 </ScrollView>
             </View>
+
+            <Modal visible={modalVisible} transparent>
+                <View style={styles.modalBackground}>
+                    <TouchableOpacity
+                        style={styles.modalCloseArea}
+                        onPress={() => setModalVisible(false)}
+                    />
+                    {modalImageUrl && (
+                        <Image
+                            source={{ uri: modalImageUrl }}
+                            style={styles.modalImage}
+                            resizeMode="contain"
+                        />
+                    )}
+                    <Button text="Close" onPress={() => setModalVisible(false)} />
+                </View>
+            </Modal>
         </StdSidebarLayout>
     );
 };
@@ -206,4 +259,24 @@ const styles = StyleSheet.create({
         color: "#6B7280",
         fontWeight: "500",
     },
+
+    noticeIconWrapper: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        marginRight: 12,
+        backgroundColor: "#EEF2FF",
+        justifyContent: "center",
+        alignItems: "center",
+    },
+
+    noticeImageSmall: {
+        width: 60,
+        height: 60,
+        borderRadius: 8,
+        marginRight: 12,
+    },
+    modalBackground: { flex: 1, backgroundColor: "rgba(0,0,0,0.8)", justifyContent: "center", alignItems: "center" },
+    modalCloseArea: { position: "absolute", top: 0, left: 0, right: 0, bottom: 0 },
+    modalImage: { width: "90%", height: "70%", borderRadius: 12 }
 });

@@ -111,9 +111,9 @@ const CredentialScreen = () => {
           </TouchableOpacity>
           <Text style={styles.rememberText}>Remember me</Text>
 
-          {/* <TouchableOpacity onPress={() => goToForgetPassword(userType)}>
+          <TouchableOpacity onPress={() => goToForgetPassword(userType)}>
             <Text style={styles.forgotText}>Forgot password?</Text>
-          </TouchableOpacity> */}
+          </TouchableOpacity>
         </View>
 
         <TouchableOpacity onPress={onSignIn} style={styles.signInButton}>

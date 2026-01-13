@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Sapient Heights",
-    "slug": "sapient-mobile",
+    "slug": "sheights",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/sapient-logo.png",
@@ -58,8 +58,9 @@
     "extra": {
       "router": {},
       "eas": {
-        "projectId": "50565771-4150-4cbd-929d-27cd50bd3af1"
+        "projectId": "a3c68ae0-5837-4a6f-85b4-e3cb58456f98"
       }
-    }
+    },
+    "owner": "s_shekhar"
   }
 }

@@ -6,19 +6,21 @@ import 'react-native-reanimated';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import Toast from 'react-native-toast-message';
 
+/*
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
 import { useEffect } from 'react';
 import { Platform } from 'react-native';
 
 import * as SecureStore from 'expo-secure-store';
+*/
 
 export default function RootLayout() {
   const colorScheme = useColorScheme();
-
+/*
   useEffect(() => {
     registerForPushNotificationsAsync();
-  }, []);
+  }, []); */
 
   return (
     <SafeAreaProvider>
@@ -30,7 +32,7 @@ export default function RootLayout() {
     </SafeAreaProvider>
   );
 }
-
+/*
 async function registerForPushNotificationsAsync() {
   if (!Device.isDevice) return null;
 
@@ -70,4 +72,4 @@ async function registerForPushNotificationsAsync() {
   }
 
   return token;
-}
+}*/

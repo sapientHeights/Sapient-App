@@ -131,11 +131,15 @@ const StdAttendance: React.FC<{ navigation: any }> = ({ navigation }) => {
         }
 
         for (let d = 1; d <= daysInMonth; d++) {
+            const fullDate = new Date(year, month, d);
             const key = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+            const isSunday = fullDate.getDay() === 0;
+
             calendar.push({
                 key,
                 date: d,
-                status: attMap[key] || null,
+                status: attMap[key] || (isSunday ? "L" : null),
             });
         }
 
@@ -225,7 +229,7 @@ const StdAttendance: React.FC<{ navigation: any }> = ({ navigation }) => {
                 <View style={styles.legendContainer}>
                     <LegendDot color="#10B981" label="Present" />
                     <LegendDot color="#EF4444" label="Absent" />
-                    <LegendDot color="#F59E0B" label="Leave" />
+                    <LegendDot color="#F59E0B" label="Leave / Sunday" />
                 </View>
 
                 <View style={styles.legendContainer}>

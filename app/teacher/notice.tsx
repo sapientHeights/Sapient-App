@@ -9,6 +9,10 @@ import { useEffect, useState } from "react";
 import { ActivityIndicator, FlatList, Modal, Platform, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
 import Toast from "react-native-toast-message";
 
+import * as ImagePicker from "expo-image-picker";
+import { Image } from "react-native";
+
+
 type NoticeData = {
     sessionId: string;
     date: string;
@@ -35,6 +39,9 @@ const Notice = () => {
     }
 
     const [formData, setFormData] = useState(initialFormData);
+    const [image, setImage] = useState<ImagePicker.ImagePickerAsset | null>(null);
+
+    const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
 
     // Load user
     useEffect(() => {
@@ -124,18 +131,56 @@ const Notice = () => {
         </>
     );
 
-    const resetForm = () => {
-        if (JSON.stringify(formData) === JSON.stringify(initialFormData)) {
+    const pickImage = async () => {
+        const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        if (!permission.granted) {
+            Toast.show({ type: "error", text1: "Permission required to access gallery" });
+            return;
+        }
+
+        const result = await ImagePicker.launchImageLibraryAsync({
+            allowsEditing: true,
+            aspect: [4, 3],
+            quality: 0.7,
+        });
+
+        if (!result.canceled) {
+            setImage(result.assets[0]);
+        }
+    };
+
+
+
+    const resetForm = (showToast = true) => {
+        if ((JSON.stringify(formData) === JSON.stringify(initialFormData)) && image === null) {
             Toast.show({ type: "error", text1: "Nothing to clear" });
             return;
         }
         setFormData(initialFormData);
-        Toast.show({ type: "success", text1: "Fields cleared!" });
+        setImage(null);
+        if(showToast){
+            Toast.show({ type: "success", text1: "Fields cleared!" });
+        }
     };
 
     const onDateChange = (date: Date) => {
         setFormData((prev) => ({ ...prev, ["date"]: date.toLocaleDateString("en-CA") }));
         //setSelectedDate(date);
+    };
+
+    const createImageFormData = async (image: any) => {
+        if (Platform.OS === "web") {
+            const response = await fetch(image.uri);
+            const blob = await response.blob();
+            return blob;
+        }
+
+        // Android / iOS
+        return {
+            uri: image.uri,
+            name: "notice.jpg",
+            type: "image/jpeg",
+        } as any;
     };
 
     const saveData = async () => {
@@ -151,8 +196,7 @@ const Notice = () => {
 
         setPageLoading(true);
 
-        const BACKEND_URL = process.env.EXPO_PUBLIC_BACKEND_URL;
-
+        /*
         const noticeData = {
             sessionId: formData.sessionId,
             date: formData.date,
@@ -185,6 +229,48 @@ const Notice = () => {
         } catch (err) {
             Toast.show({ type: "error", text1: "Some error occurred" });
         } finally {
+            setPageLoading(false);
+        }
+        */
+
+        const form = new FormData();
+        form.append("noticeData", JSON.stringify({
+            ...formData,
+            createdBy: userData?.emailId
+        }));
+
+        if (image) {
+            const imageData = await createImageFormData(image);
+
+            if (Platform.OS === "web") {
+                form.append("image", imageData, "notice.jpg");
+            } else {
+                form.append("image", imageData);
+            }
+        }
+
+        try {
+            const res = await fetch(`${BACKEND_URL}/saveNotice.php`, {
+                method: "POST",
+                body: form
+            });
+
+            const data = await res.json();
+            if (data.error) {
+                Toast.show({ type: "error", text1: "Failed to save data" });
+            } else {
+                Toast.show({
+                    type: "success",
+                    text1: "Notice saved",
+                });
+                resetForm(false);
+                setImage(null);
+            }
+        }
+        catch (err) {
+            Toast.show({ type: "error", text1: "Some error occurred" });
+        }
+        finally {
             setPageLoading(false);
         }
     }
@@ -261,9 +347,25 @@ const Notice = () => {
                         editable={!!formData.subject}
                     />
 
+                    <Text style={styles.label}>Upload Image (optional)</Text>
+                    <TouchableOpacity style={styles.imagePicker} onPress={pickImage}>
+                        <Feather name="image" size={20} color="#4F46E5" />
+                        <Text style={{ marginLeft: 8, color: "#4F46E5", fontWeight: "600" }}>
+                            Select Image
+                        </Text>
+                    </TouchableOpacity>
+
+                    {image && (
+                        <Image
+                            source={{ uri: image.uri }}
+                            style={styles.previewImage}
+                        />
+                    )}
+
+
                     {/* Buttons */}
                     <View style={styles.buttonRow}>
-                        <TouchableOpacity style={styles.resetBtn} onPress={resetForm}>
+                        <TouchableOpacity style={styles.resetBtn} onPress={() => resetForm()}>
                             <Text style={styles.buttonText}>Clear</Text>
                         </TouchableOpacity>
 
@@ -279,6 +381,7 @@ const Notice = () => {
 
                 </View>
             </ScrollView>
+
         </SidebarLayout>
     )
 }
@@ -344,4 +447,22 @@ const styles = StyleSheet.create({
     buttonText: { fontWeight: "700" },
     dateInput: { flexDirection: "row", alignItems: "center", backgroundColor: "#EEF2FF", padding: 12, borderRadius: 10, marginBottom: 10 },
     dateText: { marginLeft: 8, color: "#1E293B", fontWeight: "500" },
+    imagePicker: {
+        flexDirection: "row",
+        alignItems: "center",
+        backgroundColor: "#EEF2FF",
+        padding: 14,
+        borderRadius: 10,
+        justifyContent: "center",
+        marginTop: 8,
+    },
+
+    previewImage: {
+        width: "100%",
+        height: 200,
+        marginTop: 12,
+        borderRadius: 12,
+        resizeMode: "cover",
+    },
+
 })
