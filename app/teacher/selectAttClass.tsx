@@ -22,6 +22,11 @@ import { useSessions } from "@/hooks/use-sessions";
 import { useTeacherClasses } from "@/hooks/use-teacher-classes";
 import { useRouter } from "expo-router";
 
+type ClassSecPickerFormat = {
+    id: string;
+    name: string;
+}
+
 export default function SelectAttClass() {
     const router = useRouter();
 
@@ -48,6 +53,7 @@ export default function SelectAttClass() {
     const { classes, teacherClassesData: tClassesData, isLoading: csLoading } =
         useTeacherClasses(academicData.sessionId);
 
+    const [uniqueClasses, setUniqueClasses] = useState([{ id: "", name: "" }]);
     const [sections, setSections] = useState([{ id: "", name: "" }]);
     const [showPicker, setShowPicker] = useState(false);
 
@@ -82,6 +88,14 @@ export default function SelectAttClass() {
     }, []);
 
     useEffect(() => {
+        let uClasses: ClassSecPickerFormat[] = classes.filter((cls: ClassSecPickerFormat, index, arr) =>
+            arr.findIndex((c: ClassSecPickerFormat) => c.id === cls.id) === index
+        );
+
+        setUniqueClasses(uClasses);
+    }, [tClassesData])
+
+    useEffect(() => {
         if (activeSession) {
             setAcademicData(prev => ({
                 ...prev,
@@ -110,7 +124,11 @@ export default function SelectAttClass() {
                 name: item.section,
             }));
 
-        setSections(sectionsData);
+        let uniqueSections: ClassSecPickerFormat[] = sectionsData.filter((section:ClassSecPickerFormat, index, arr) =>
+            arr.findIndex((s: ClassSecPickerFormat) => s.id === section.id) === index
+        );
+
+        setSections(uniqueSections);
         setAcademicData((prev) => ({ ...prev, section: "" }));
     }, [academicData.studentClass]);
 
@@ -262,7 +280,7 @@ export default function SelectAttClass() {
                     {renderPicker("sessionId", sessions || [], "Session", false)}
                     {renderPicker(
                         "studentClass",
-                        classes || [],
+                        uniqueClasses || [],
                         "Class",
                         academicData.sessionId === ""
                     )}

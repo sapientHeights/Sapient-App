@@ -43,6 +43,11 @@ type DailyTeaching = {
     remarks: string;
 };
 
+type ClassSecPickerFormat = {
+    id: string;
+    name: string;
+}
+
 const DailyTeaching = () => {
     const todayIST = new Intl.DateTimeFormat("en-CA", {
         timeZone: "Asia/Kolkata",
@@ -71,6 +76,8 @@ const DailyTeaching = () => {
     const { sessions, activeSession, isLoading: sessionsLoading } = useSessions();
     const { classes, teacherClassesData: tClassesData, isLoading: csLoading } =
         useTeacherClasses(formData.sessionId);
+
+    const [uniqueClasses, setUniqueClasses] = useState([{ id: "", name: "" }]);
     const [sections, setSections] = useState([{ id: "", name: "" }]);
     const [subjects, setSubjects] = useState([{ id: "", name: "" }]);
 
@@ -97,6 +104,14 @@ const DailyTeaching = () => {
     }, []);
 
     useEffect(() => {
+        let uClasses: ClassSecPickerFormat[] = classes.filter((cls:ClassSecPickerFormat, index, arr) =>
+            arr.findIndex((c: ClassSecPickerFormat) => c.id === cls.id) === index
+        );
+
+        setUniqueClasses(uClasses);
+    }, [tClassesData])
+
+    useEffect(() => {
         if (activeSession) {
             setFormData(prev => ({
                 ...prev,
@@ -121,7 +136,11 @@ const DailyTeaching = () => {
             .filter((item) => item.classId === formData.studentClass)
             .map((item) => ({ id: item.section, name: item.section }));
 
-        setSections(sec);
+        let uniqueSections: ClassSecPickerFormat[] = sec.filter((section:ClassSecPickerFormat, index, arr) =>
+            arr.findIndex((s: ClassSecPickerFormat) => s.id === section.id) === index
+        );
+
+        setSections(uniqueSections);
         setFormData((prev) => ({ ...prev, section: "", subject: "" }));
     }, [formData.studentClass]);
 
@@ -287,7 +306,7 @@ const DailyTeaching = () => {
                     {renderPicker("sessionId", sessions || [], "Session", false)}
                     {renderPicker(
                         "studentClass",
-                        classes || [],
+                        uniqueClasses || [],
                         "Class",
                         formData.sessionId === ""
                     )}
